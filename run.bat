@@ -1,7 +1,6 @@
 @echo off
 setlocal
 
-:: Auto-run setup if venv is missing
 if not exist ".venv\Scripts\activate.bat" (
     echo Virtual environment not found — running setup first...
     echo.
@@ -10,5 +9,15 @@ if not exist ".venv\Scripts\activate.bat" (
 )
 
 call .venv\Scripts\activate.bat
+
+for /f "tokens=*" %%v in ('python --version') do echo Running on %%v
+echo.
+
 python main.py
+
+if errorlevel 1 (
+    echo.
+    echo Virga exited with an error ^(code %errorlevel%^).
+    pause
+)
 endlocal

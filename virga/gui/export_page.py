@@ -6,15 +6,11 @@ clipboard copy + file export. Includes raw vs. processed playback.
 """
 
 import numpy as np
-try:
-    import sounddevice as sd
-    _SD_AVAILABLE = True
-except Exception:
-    _SD_AVAILABLE = False
 from pathlib import Path
 from datetime import datetime
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QBuffer, QByteArray, QIODevice
+from PySide6.QtMultimedia import QAudioFormat, QAudioSink, QMediaDevices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView,
@@ -24,20 +20,12 @@ from PySide6.QtWidgets import (
 from ..dsp.eq_solver import SMARTSDR_BANDS, build_sos, apply_eq
 
 
-class PlaybackThread(QThread):
-    done = Signal()
-
-    def __init__(self, audio: np.ndarray, sample_rate: int):
-        super().__init__()
-        self._audio = audio
-        self._sr = sample_rate
-
-    def run(self):
-        try:
-            sd.play(self._audio, self._sr, blocking=True)
-        except Exception:
-            pass
-        self.done.emit()
+def _make_playback_format(sample_rate: int) -> QAudioFormat:
+    fmt = QAudioFormat()
+    fmt.setSampleRate(sample_rate)
+    fmt.setChannelCount(1)
+    fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
+    return fmt
 
 
 class BandTable(QWidget):
@@ -135,7 +123,8 @@ class ExportPage(QWidget):
         self._contest_gains: dict[int, float] = {}
         self._raw_audio: np.ndarray | None = None
         self._sample_rate: int = 48_000
-        self._playback_thread: PlaybackThread | None = None
+        self._sink: QAudioSink | None = None
+        self._play_buffer: QBuffer | None = None
         self._build_ui()
 
     def _build_ui(self):
@@ -205,7 +194,7 @@ class ExportPage(QWidget):
         self.play_contest_btn.clicked.connect(lambda: self._play_processed("contest"))
         pb_row.addWidget(self.play_contest_btn)
         self.stop_btn = QPushButton("⏹  Stop")
-        self.stop_btn.clicked.connect(sd.stop)
+        self.stop_btn.clicked.connect(self._stop_playback)
         pb_row.addWidget(self.stop_btn)
         pb_row.addStretch()
         layout.addLayout(pb_row)
@@ -280,11 +269,21 @@ class ExportPage(QWidget):
         self._start_playback(processed)
 
     def _start_playback(self, audio: np.ndarray):
-        if not _SD_AVAILABLE:
-            return
-        sd.stop()
-        self._playback_thread = PlaybackThread(audio, self._sample_rate)
-        self._playback_thread.start()
+        if self._sink:
+            self._sink.stop()
+
+        fmt = _make_playback_format(self._sample_rate)
+        self._sink = QAudioSink(QMediaDevices.defaultAudioOutput(), fmt)
+
+        data = audio.astype(np.float32).tobytes()
+        self._play_buffer = QBuffer()
+        self._play_buffer.setData(QByteArray(data))
+        self._play_buffer.open(QIODevice.OpenModeFlag.ReadOnly)
+        self._sink.start(self._play_buffer)
+
+    def _stop_playback(self):
+        if self._sink:
+            self._sink.stop()
 
     def set_raw_audio(self, audio: np.ndarray, sample_rate: int):
         self._raw_audio = audio
