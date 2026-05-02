@@ -4,3 +4,5 @@ scipy>=1.11.0
 sounddevice>=0.4.6
 pyqtgraph>=0.13.3
 soundfile>=0.12.1
+# cffi 2.0 breaks sounddevice on Windows — pin below 2.0
+cffi>=1.15.0,<2.0
