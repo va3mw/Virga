@@ -58,7 +58,7 @@ class SpectrumView(QWidget):
         self.plot_widget.setLabel('left', 'Level (dB, relative)')
         self.plot_widget.setLabel('bottom', 'Frequency (Hz)')
         self.plot_widget.setLogMode(x=True, y=False)
-        self.plot_widget.setXRange(80, 12000, padding=0)
+        self.plot_widget.setXRange(np.log10(80), np.log10(12000), padding=0)
         self.plot_widget.setYRange(-30, 15, padding=0)
         self.plot_widget.showGrid(x=True, y=True, alpha=0.15)
         self.plot_widget.getAxis('bottom').setTicks(self._freq_ticks())
@@ -84,9 +84,9 @@ class SpectrumView(QWidget):
 
     @staticmethod
     def _freq_ticks():
-        major = [(f, f"{f} Hz" if f < 1000 else f"{f//1000} kHz")
+        major = [(np.log10(f), f"{f} Hz" if f < 1000 else f"{f//1000} kHz")
                  for f in (100, 200, 500, 1000, 2000, 5000, 10000)]
-        minor = [(f, "") for f in
+        minor = [(np.log10(f), "") for f in
                  (125, 160, 250, 315, 400, 630, 800, 1250, 1600, 2500, 3150, 4000, 6300, 8000)]
         return [major, minor]
 
@@ -171,7 +171,7 @@ class SpectrumView(QWidget):
                 if harmonic > 12000:
                     break
                 line = pg.InfiniteLine(
-                    pos=harmonic,
+                    pos=np.log10(harmonic),
                     angle=90,
                     pen=pg.mkPen('#f85149', width=1, style=DASH),
                 )
@@ -185,7 +185,7 @@ class SpectrumView(QWidget):
         for band in SMARTSDR_BANDS:
             if 80 <= band <= 12000:
                 pw.addItem(pg.InfiniteLine(
-                    pos=float(band), angle=90,
+                    pos=np.log10(float(band)), angle=90,
                     pen=pg.mkPen('#30363d', width=1)
                 ))
 
