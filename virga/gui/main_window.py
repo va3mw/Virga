@@ -369,7 +369,7 @@ class MainWindow(QMainWindow):
         storage.profile_store.update_eq(self._current_callsign, "ragchew", ragchew_gains)
         storage.profile_store.update_eq(self._current_callsign, "contest", contest_gains)
 
-        self.spectrum_view.plot(result, ragchew_gains, contest_gains)
+        self.spectrum_view.show_plot(result, ragchew_gains, contest_gains)
         self.export_page.set_results(
             callsign=self._current_callsign,
             ragchew_gains=ragchew_gains,
