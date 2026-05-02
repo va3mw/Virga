@@ -9,12 +9,20 @@ emitting the complete recording when done.
 """
 
 import numpy as np
-import sounddevice as sd
 from PySide6.QtCore import QThread, Signal
+
+try:
+    import sounddevice as sd
+    _SD_AVAILABLE = True
+except Exception as _sd_err:
+    _SD_AVAILABLE = False
+    _SD_ERROR = str(_sd_err)
 
 
 def list_input_devices() -> list[tuple[int, str]]:
     """Return [(device_index, display_name), ...] for all input-capable devices."""
+    if not _SD_AVAILABLE:
+        return []
     results = []
     try:
         devices = sd.query_devices()
@@ -27,6 +35,8 @@ def list_input_devices() -> list[tuple[int, str]]:
 
 
 def default_input_device() -> int | None:
+    if not _SD_AVAILABLE:
+        return None
     try:
         return sd.default.device[0]
     except Exception:
@@ -72,6 +82,10 @@ class RecorderThread(QThread):
             rms = float(np.sqrt(np.mean(mono ** 2)))
             # Scale RMS to a 0–1 meter range assuming typical speech ~ 0.1 RMS
             self.level_updated.emit(min(rms * 8.0, 1.0))
+
+        if not _SD_AVAILABLE:
+            self.error.emit(f"sounddevice not available: {_SD_ERROR}")
+            return
 
         try:
             with sd.InputStream(

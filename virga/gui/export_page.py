@@ -6,7 +6,11 @@ clipboard copy + file export. Includes raw vs. processed playback.
 """
 
 import numpy as np
-import sounddevice as sd
+try:
+    import sounddevice as sd
+    _SD_AVAILABLE = True
+except Exception:
+    _SD_AVAILABLE = False
 from pathlib import Path
 from datetime import datetime
 
@@ -276,6 +280,8 @@ class ExportPage(QWidget):
         self._start_playback(processed)
 
     def _start_playback(self, audio: np.ndarray):
+        if not _SD_AVAILABLE:
+            return
         sd.stop()
         self._playback_thread = PlaybackThread(audio, self._sample_rate)
         self._playback_thread.start()
