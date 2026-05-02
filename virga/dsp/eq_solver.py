@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 EQ solver: maps a measured LTASS + target profile → SmartSDR band gains.
 

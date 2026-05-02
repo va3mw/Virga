@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Main application window."""
 
 import numpy as np
@@ -11,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import storage
+from ..version import __version__
 from ..audio.analyzer import AnalysisResult
 from .calibration_page import CalibrationPage
 from .spectrum_view import SpectrumView
@@ -169,7 +172,7 @@ class NewProfileDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Virga — SSB Voice Equaliser")
+        self.setWindowTitle(f"Virga {__version__} — SSB Voice Equaliser")
         self.resize(1100, 720)
         self.setStyleSheet(STYLESHEET)
 

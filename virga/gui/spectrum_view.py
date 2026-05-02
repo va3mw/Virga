@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Spectrum results view — shows measured LTASS, Bell Labs reference,
 ragchew and contest target curves, F0 marker and harmonics.

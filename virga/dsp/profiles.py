@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Target EQ profiles for the two SSB modes.
 

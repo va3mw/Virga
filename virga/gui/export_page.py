@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Export page — displays SmartSDR TX EQ settings and provides
 clipboard copy + file export. Includes raw vs. processed playback.

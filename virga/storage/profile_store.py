@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Persistent profile storage — one JSON file per operator in %APPDATA%/Virga/.
 

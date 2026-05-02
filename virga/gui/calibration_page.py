@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Calibration page — displays the reading paragraph, records the user's voice,
 runs analysis, and emits results back to the main window.
