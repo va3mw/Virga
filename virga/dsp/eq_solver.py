@@ -35,13 +35,13 @@ def solve(
     # Evaluate target at the measured frequency bins
     target_at_meas = profile.at(meas_freqs)
 
-    # Correction = target − measured (what EQ must add)
-    correction = target_at_meas - meas_levels_db
+    # Normalise target to 0 dB at 1 kHz — same reference as measured LTASS.
+    # This gives us a pure shape correction independent of absolute level.
+    ref_idx = np.argmin(np.abs(meas_freqs - 1000.0))
+    target_at_meas -= target_at_meas[ref_idx]
 
-    # Remove DC offset (we equalise shape, not loudness)
-    mask = (meas_freqs >= 200) & (meas_freqs <= 4000)
-    if mask.sum() > 0:
-        correction -= np.mean(correction[mask])
+    # Correction = target shape − measured shape (both 0 dB at 1 kHz)
+    correction = target_at_meas - meas_levels_db
 
     # Interpolate correction at SmartSDR band centres
     band_gains = np.interp(SMARTSDR_BANDS, meas_freqs, correction)

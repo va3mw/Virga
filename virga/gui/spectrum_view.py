@@ -58,7 +58,7 @@ class SpectrumView(QWidget):
         self.plot_widget.setLabel('left', 'Level (dB, relative)')
         self.plot_widget.setLabel('bottom', 'Frequency (Hz)')
         self.plot_widget.setLogMode(x=True, y=False)
-        self.plot_widget.setXRange(np.log10(80), np.log10(12000), padding=0)
+        self.plot_widget.setXRange(80, 12000, padding=0)
         self.plot_widget.setYRange(-30, 15, padding=0)
         self.plot_widget.showGrid(x=True, y=True, alpha=0.15)
         self.plot_widget.getAxis('bottom').setTicks(self._freq_ticks())
@@ -84,9 +84,9 @@ class SpectrumView(QWidget):
 
     @staticmethod
     def _freq_ticks():
-        major = [(np.log10(f), f"{f} Hz" if f < 1000 else f"{f//1000} kHz")
+        major = [(f, f"{f} Hz" if f < 1000 else f"{f//1000} kHz")
                  for f in (100, 200, 500, 1000, 2000, 5000, 10000)]
-        minor = [(np.log10(f), "") for f in
+        minor = [(f, "") for f in
                  (125, 160, 250, 315, 400, 630, 800, 1250, 1600, 2500, 3150, 4000, 6300, 8000)]
         return [major, minor]
 
@@ -129,26 +129,30 @@ class SpectrumView(QWidget):
         DASH = Qt.PenStyle.DashLine
         DOT  = Qt.PenStyle.DotLine
 
+        # NOTE: setLogMode(x=True) means pyqtgraph applies log10 internally
+        # to PlotDataItem data. Pass raw Hz values here; InfiniteLine.pos
+        # uses ViewBox (already-log) coordinates so those stay as log10.
+
         # 1. Measured LTASS (user)
-        pw.plot(log_f, result.ltass_db[mask],
+        pw.plot(f, result.ltass_db[mask],
                 pen=pg.mkPen('#c9d1d9', width=2),
                 name="Your voice (measured)")
 
         # 2. Bell Labs LTASS reference
         if self._cb_ref.isChecked():
-            pw.plot(log_f, get_ltass_at(f),
+            pw.plot(f, get_ltass_at(f),
                     pen=pg.mkPen('#888888', width=1.5, style=DASH),
                     name="Bell Labs LTASS")
 
         # 3. Ragchew target
         if self._cb_ragchew.isChecked():
-            pw.plot(log_f, RAGCHEW.at(f),
+            pw.plot(f, RAGCHEW.at(f),
                     pen=pg.mkPen('#3fb950', width=1.5, style=DOT),
                     name="Ragchew target")
 
         # 4. Contest target
         if self._cb_contest.isChecked():
-            pw.plot(log_f, CONTEST.at(f),
+            pw.plot(f, CONTEST.at(f),
                     pen=pg.mkPen('#f0a500', width=1.5, style=DOT),
                     name="Contest target")
 
@@ -157,7 +161,7 @@ class SpectrumView(QWidget):
             correction = np.interp(f,
                                    np.array(list(self._ragchew_gains.keys())),
                                    np.array(list(self._ragchew_gains.values())))
-            pw.plot(log_f, result.ltass_db[mask] + correction,
+            pw.plot(f, result.ltass_db[mask] + correction,
                     pen=pg.mkPen('#58a6ff', width=2),
                     name="Your voice (corrected)")
 
@@ -166,11 +170,10 @@ class SpectrumView(QWidget):
             for n, harmonic in enumerate(result.f0_hz * np.arange(1, 8), start=1):
                 if harmonic > 12000:
                     break
-                colour = '#f85149' if n == 1 else '#f85149'
                 line = pg.InfiniteLine(
-                    pos=np.log10(harmonic),
+                    pos=harmonic,
                     angle=90,
-                    pen=pg.mkPen(colour, width=1, style=DASH),
+                    pen=pg.mkPen('#f85149', width=1, style=DASH),
                 )
                 if n <= 4:
                     line.label = pg.InfLineLabel(line, text=f"H{n}",
@@ -182,7 +185,7 @@ class SpectrumView(QWidget):
         for band in SMARTSDR_BANDS:
             if 80 <= band <= 12000:
                 pw.addItem(pg.InfiniteLine(
-                    pos=np.log10(band), angle=90,
+                    pos=float(band), angle=90,
                     pen=pg.mkPen('#30363d', width=1)
                 ))
 
