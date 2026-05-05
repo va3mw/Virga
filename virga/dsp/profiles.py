@@ -44,15 +44,22 @@ class Profile:
                          left=self.levels[0], right=self.levels[-1])
 
 
+# Ragchew-specific frequency axis — extended below 100 Hz and above 3 kHz
+RAGCHEW_FREQS = np.array([
+    50, 100, 200, 300, 400, 500, 630, 800, 1000, 1250,
+    1600, 2000, 2500, 3000, 3200, 4000, 6300, 8000
+], dtype=float)
+
 # --- Ragchew -----------------------------------------------------------
-# Broader passband (~200–2800 Hz). Preserves low vocal harmonics for warmth.
-# Gentle presence lift 1.5–2 kHz. Light high-pass to remove RF hum.
+# Broad passband (50–3200 Hz). Full low-end warmth including fundamental
+# voice harmonics below 100 Hz. Gentle presence lift 1.5–2 kHz.
 RAGCHEW = Profile(
     name="Ragchew",
-    freqs=PROFILE_FREQS,
+    freqs=RAGCHEW_FREQS,
     levels=np.array([
-        -8.0,    # 100 Hz  — below SSB passband, attenuate
-          0.0,   # 200 Hz  — fuller low harmonics
+        -12.0,   # 50 Hz   — sub-bass, allow body without boom
+         -5.0,   # 100 Hz
+          0.0,   # 200 Hz  — low harmonic warmth
           3.5,   # 300 Hz
           5.5,   # 400 Hz
           6.5,   # 500 Hz
@@ -63,14 +70,15 @@ RAGCHEW = Profile(
           6.5,   # 1600 Hz — gentle presence lift
           6.0,   # 2000 Hz
           4.5,   # 2500 Hz
-          1.0,   # 3000 Hz
-         -5.0,   # 4000 Hz — above SSB passband, roll off
+          2.0,   # 3000 Hz
+          0.5,   # 3200 Hz — passband edge
+         -5.0,   # 4000 Hz — roll off
         -14.0,   # 6300 Hz
         -18.0,   # 8000 Hz
     ], dtype=float),
     description="Natural, warm, readable — everyday QSOs",
-    passband_low=200.0,
-    passband_high=2800.0,
+    passband_low=50.0,
+    passband_high=3200.0,
 )
 
 # --- Contest -----------------------------------------------------------
