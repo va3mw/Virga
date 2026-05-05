@@ -11,7 +11,7 @@
 | Profile | Passband | Character | Use |
 |---------|----------|-----------|-----|
 | **Ragchew** | 50–3200 Hz | Warm, natural, full low-end | Casual QSOs, nets, rag-chew |
-| **Contest** | 400–2500 Hz | Tight, punchy, cuts pileups | Contest operating, DX pile-ups |
+| **Contest** | 400–2900 Hz | Tight, punchy, cuts pileups | Contest operating, DX pile-ups |
 
 The target curves are grounded in the **Bell Labs Articulation Index** (French & Steinberg 1947) and the **ITU-T P.56 LTASS** reference (Byrne et al. 1994). The 1000–3000 Hz range carries the majority of speech intelligibility; both profiles boost this region while shaping the passband edges to suit the operating style.
 

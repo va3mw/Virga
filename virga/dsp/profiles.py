@@ -81,14 +81,20 @@ RAGCHEW = Profile(
     passband_high=3200.0,
 )
 
+# Contest-specific frequency axis — adds 2900 Hz passband edge point
+CONTEST_FREQS = np.array([
+    100, 200, 300, 400, 500, 630, 800, 1000, 1250, 1600,
+    2000, 2500, 2900, 3000, 4000, 6300, 8000
+], dtype=float)
+
 # --- Contest -----------------------------------------------------------
-# Tight passband (~400–2500 Hz). Sacrifices low-end warmth entirely.
+# Tight passband (400–2900 Hz). Sacrifices low-end warmth entirely.
 # Flat-to-rising in 400–2000 Hz to maximise Articulation Index. Hard brick
 # walls outside the SSB passband. Expects downstream compression/limiting
 # in SmartSDR to drive the processed signal to the TX ALC ceiling.
 CONTEST = Profile(
     name="Contest",
-    freqs=PROFILE_FREQS,
+    freqs=CONTEST_FREQS,
     levels=np.array([
         -20.0,   # 100 Hz  — cut completely
         -14.0,   # 200 Hz  — cut
@@ -101,15 +107,16 @@ CONTEST = Profile(
           8.0,   # 1250 Hz — peak intelligibility region
           8.0,   # 1600 Hz
           7.5,   # 2000 Hz
-          5.0,   # 2500 Hz — roll off
-         -2.0,   # 3000 Hz
+          6.5,   # 2500 Hz
+          4.0,   # 2900 Hz — passband edge
+         -3.0,   # 3000 Hz — sharp rolloff
         -12.0,   # 4000 Hz — hard cut
         -20.0,   # 6300 Hz
         -22.0,   # 8000 Hz
     ], dtype=float),
     description="Punchy, tight, cuts through pileups — contests",
     passband_low=400.0,
-    passband_high=2500.0,
+    passband_high=2900.0,
 )
 
 PROFILES: dict[str, Profile] = {
