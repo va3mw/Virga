@@ -84,9 +84,15 @@ def delete(callsign: str) -> None:
         p.unlink()
 
 
-def update_analysis(callsign: str, f0_hz: float, f0_label: str) -> dict:
+def update_analysis(callsign: str, f0_hz: float, f0_label: str,
+                    freqs=None, ltass_db=None) -> dict:
     profile = load(callsign) or _empty_profile(callsign, callsign)
-    profile["analysis"] = {"f0_hz": f0_hz, "f0_label": f0_label}
+    profile["analysis"] = {
+        "f0_hz": f0_hz,
+        "f0_label": f0_label,
+        "freqs":    freqs.tolist() if freqs is not None else None,
+        "ltass_db": ltass_db.tolist() if ltass_db is not None else None,
+    }
     save(profile)
     return profile
 

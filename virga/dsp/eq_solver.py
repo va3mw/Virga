@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 """
-EQ solver: maps a measured LTASS + target profile → SmartSDR band gains.
+EQ solver: maps a measured LTASS + target profile → band gains for a given device.
 
-SmartSDR TX graphic EQ has 10 fixed bands (ISO octave centres):
-  32, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 Hz
-Each band is adjustable ±10 dB.
-
-The solver also builds a chain of peaking biquad filters at those same
-frequencies so the GUI can play back a processed preview.
+The solver also builds a chain of peaking biquad filters at the band frequencies
+so the GUI can play back a processed preview.
 """
 
 import numpy as np
 from scipy.signal import sosfilt
 from .profiles import Profile
+from .eq_devices import EQDevice, SMARTSDR_TX_EQ
 
-# SmartSDR TX EQ band centre frequencies (Hz)
-SMARTSDR_BANDS = np.array([32, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000], dtype=float)
-SMARTSDR_MAX_DB = 10.0
-SMARTSDR_MIN_DB = -10.0
+# Keep SMARTSDR_BANDS as a module-level name — spectrum_view imports it for markers.
+SMARTSDR_BANDS = SMARTSDR_TX_EQ.bands
 
 
 def solve(
@@ -26,31 +21,29 @@ def solve(
     meas_levels_db: np.ndarray,
     profile: Profile,
     f0_hz: float | None = None,
+    device: EQDevice = SMARTSDR_TX_EQ,
 ) -> dict[int, float]:
     """
-    Compute SmartSDR band gains (dB) to move meas_levels toward profile.
+    Compute EQ band gains (dB) to move meas_levels toward profile for device.
 
-    Returns a dict {band_hz: gain_db} rounded to 0.5 dB steps.
+    Returns {band_hz: gain_db} rounded to the device's step size.
     """
-    # Evaluate target at the measured frequency bins
     target_at_meas = profile.at(meas_freqs)
 
     # Normalise target to 0 dB at 1 kHz — same reference as measured LTASS.
-    # This gives us a pure shape correction independent of absolute level.
     ref_idx = np.argmin(np.abs(meas_freqs - 1000.0))
     target_at_meas -= target_at_meas[ref_idx]
 
-    # Correction = target shape − measured shape (both 0 dB at 1 kHz)
     correction = target_at_meas - meas_levels_db
 
-    # Interpolate correction at SmartSDR band centres
-    band_gains = np.interp(SMARTSDR_BANDS, meas_freqs, correction)
+    band_gains = np.interp(device.bands, meas_freqs, correction)
+    band_gains = np.clip(band_gains, device.min_db, device.max_db)
 
-    # Clip to hardware limits and round to 0.5 dB steps
-    band_gains = np.clip(band_gains, SMARTSDR_MIN_DB, SMARTSDR_MAX_DB)
-    band_gains = np.round(band_gains * 2) / 2
+    # Round to device step size
+    steps = 1.0 / device.step_db
+    band_gains = np.round(band_gains * steps) / steps
 
-    return {int(f): float(g) for f, g in zip(SMARTSDR_BANDS, band_gains)}
+    return {int(f): float(g) for f, g in zip(device.bands, band_gains)}
 
 
 def _peaking_biquad(freq: float, gain_db: float, Q: float, sr: float) -> np.ndarray:
@@ -70,17 +63,13 @@ def _peaking_biquad(freq: float, gain_db: float, Q: float, sr: float) -> np.ndar
 
 
 def build_sos(band_gains: dict[int, float], sample_rate: float, Q: float = 1.41) -> np.ndarray:
-    """
-    Build a scipy SOS filter chain from SmartSDR band gain dict.
-    Q=1.41 (~0.7 octave) matches a graphic EQ overlap convention.
-    """
+    """Build a scipy SOS filter chain from a band gain dict."""
     rows = []
     for band_hz, gain_db in band_gains.items():
         if abs(gain_db) < 0.25:
-            continue  # skip near-unity bands
+            continue
         rows.append(_peaking_biquad(float(band_hz), gain_db, Q, sample_rate))
     if not rows:
-        # Identity filter
         return np.array([[1, 0, 0, 1, 0, 0]], dtype=float)
     return np.vstack(rows)
 

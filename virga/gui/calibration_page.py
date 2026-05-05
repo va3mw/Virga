@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
 
 from ..audio.recorder import RecorderThread, list_input_devices, default_input_device
 from ..audio import analyzer
-from ..dsp import profiles, eq_solver
 from ..calibration_text import CONTEST_PARAGRAPH, RAGCHEW_PARAGRAPH
 
 
@@ -53,8 +52,8 @@ class CalibrationPage(QWidget):
     Emits recording_done(AnalysisResult, ragchew_gains, contest_gains)
     when analysis is complete.
     """
-    # (AnalysisResult, ragchew_gains, contest_gains, raw_audio, sample_rate)
-    recording_done = Signal(object, dict, dict, object, int)
+    # (AnalysisResult, raw_audio, sample_rate)
+    recording_done = Signal(object, object, object)
 
     def __init__(self):
         super().__init__()
@@ -224,14 +223,10 @@ class CalibrationPage(QWidget):
 
         self.status_label.setText("Analysing…")
         result = analyzer.analyse(audio, sample_rate)
-
-        ragchew_gains = eq_solver.solve(result.freqs, result.ltass_db, profiles.RAGCHEW, result.f0_hz)
-        contest_gains = eq_solver.solve(result.freqs, result.ltass_db, profiles.CONTEST, result.f0_hz)
-
         self.status_label.setText(
             f"Done — F₀ {result.f0_label}  ·  {len(audio)/sample_rate:.0f} s recorded"
         )
-        self.recording_done.emit(result, ragchew_gains, contest_gains, audio, sample_rate)
+        self.recording_done.emit(result, audio, sample_rate)
 
     def _on_error(self, msg: str):
         self._is_recording = False
