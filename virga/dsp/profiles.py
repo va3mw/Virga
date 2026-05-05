@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Target EQ profiles for the two SSB modes.
 
@@ -49,13 +51,13 @@ RAGCHEW = Profile(
     name="Ragchew",
     freqs=PROFILE_FREQS,
     levels=np.array([
-        -10.0,   # 100 Hz  — below SSB passband, attenuate
-         -3.0,   # 200 Hz  — keep low harmonics (warmth)
-          1.0,   # 300 Hz
-          3.0,   # 400 Hz
-          4.5,   # 500 Hz
-          5.0,   # 630 Hz
-          5.5,   # 800 Hz
+        -8.0,    # 100 Hz  — below SSB passband, attenuate
+          0.0,   # 200 Hz  — fuller low harmonics
+          3.5,   # 300 Hz
+          5.5,   # 400 Hz
+          6.5,   # 500 Hz
+          6.5,   # 630 Hz
+          6.0,   # 800 Hz
           5.5,   # 1000 Hz — anchor
           6.0,   # 1250 Hz
           6.5,   # 1600 Hz — gentle presence lift

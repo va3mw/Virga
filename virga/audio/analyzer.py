@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Voice analysis: LTASS and fundamental frequency (F0) estimation.
 

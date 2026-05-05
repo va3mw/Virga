@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 """Main application window."""
 
 import numpy as np
 from PySide6.QtCore import Qt, Signal
+from ..audio.analyzer import AnalysisResult
 from PySide6.QtGui import QFont, QColor
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
@@ -11,7 +14,9 @@ from PySide6.QtWidgets import (
 )
 
 from .. import storage
+from ..version import __version__
 from ..audio.analyzer import AnalysisResult
+from ..audio import analyzer as _analyzer
 from .calibration_page import CalibrationPage
 from .spectrum_view import SpectrumView
 from .export_page import ExportPage
@@ -169,7 +174,7 @@ class NewProfileDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Virga — SSB Voice Equaliser")
+        self.setWindowTitle(f"Virga {__version__} — SSB Voice Equaliser")
         self.resize(1100, 720)
         self.setStyleSheet(STYLESHEET)
 
@@ -337,41 +342,44 @@ class MainWindow(QMainWindow):
         self.calibration_page.set_callsign(callsign)
         self.tabs.setEnabled(True)
 
-        # Restore previous results if present
-        if profile.get("eq"):
-            eq = profile["eq"]
-            analysis = profile.get("analysis") or {}
+        # Restore previous results if LTASS data is stored
+        analysis = profile.get("analysis") or {}
+        if analysis.get("freqs") and analysis.get("ltass_db"):
+            result = AnalysisResult(
+                freqs=np.array(analysis["freqs"]),
+                ltass_db=np.array(analysis["ltass_db"]),
+                f0_hz=analysis.get("f0_hz", 0.0),
+                f0_label=analysis.get("f0_label", ""),
+                sample_rate=48_000,
+            )
+            self.spectrum_view.show_plot(result)
             self.export_page.set_results(
                 callsign=callsign,
-                ragchew_gains={int(k): v for k, v in eq.get("ragchew", {}).items()},
-                contest_gains={int(k): v for k, v in eq.get("contest", {}).items()},
+                result=result,
                 f0_label=analysis.get("f0_label", ""),
             )
+            self.tabs.setTabEnabled(1, True)
             self.tabs.setTabEnabled(2, True)
         else:
+            self.tabs.setTabEnabled(1, False)
             self.tabs.setTabEnabled(2, False)
 
     # ── Recording result ────────────────────────────────────────────────────
 
-    def _on_recording_done(self, result: AnalysisResult,
-                            ragchew_gains: dict, contest_gains: dict,
-                            raw_audio, sample_rate: int):
+    def _on_recording_done(self, result: AnalysisResult, raw_audio, sample_rate: int):
         if not self._current_callsign:
             return
         self._analysis = result
 
         storage.profile_store.update_analysis(
-            self._current_callsign, result.f0_hz, result.f0_label
+            self._current_callsign, result.f0_hz, result.f0_label,
+            freqs=result.freqs, ltass_db=result.ltass_db,
         )
-        storage.profile_store.update_eq(self._current_callsign, "ragchew", ragchew_gains)
-        storage.profile_store.update_eq(self._current_callsign, "contest", contest_gains)
 
-        self.spectrum_view.plot(result, ragchew_gains, contest_gains)
+        self.spectrum_view.show_plot(result)
         self.export_page.set_results(
             callsign=self._current_callsign,
-            ragchew_gains=ragchew_gains,
-            contest_gains=contest_gains,
-            f0_label=result.f0_label,
+            result=result,
             raw_audio=raw_audio,
             sample_rate=sample_rate,
         )
